@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hava panelin · Hava</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#f6c667; --bg2:#e8833a; --ink:#2b1a0c; --soft:rgba(43,26,12,.62);
+  --card:rgba(255,255,255,.34); --line:rgba(43,26,12,.16); --bar:#2b1a0c;
+}
+body[data-theme="cloud"]{--bg1:#cfd8e0; --bg2:#8fa1b3; --ink:#18222d; --soft:rgba(24,34,45,.62); --line:rgba(24,34,45,.16); --bar:#18222d}
+body[data-theme="rain"]{--bg1:#5f7f9c; --bg2:#23384d; --ink:#f1f6fa; --soft:rgba(241,246,250,.7); --card:rgba(255,255,255,.12); --line:rgba(241,246,250,.2); --bar:#f1f6fa}
+body[data-theme="storm"]{--bg1:#4a4468; --bg2:#1a1830; --ink:#f3f0ff; --soft:rgba(243,240,255,.7); --card:rgba(255,255,255,.1); --line:rgba(243,240,255,.2); --bar:#f3f0ff}
+body[data-theme="snow"]{--bg1:#f4f8fc; --bg2:#b9cde0; --ink:#1b2c3d; --soft:rgba(27,44,61,.62); --line:rgba(27,44,61,.16); --bar:#1b2c3d}
+body[data-theme="night"]{--bg1:#27345c; --bg2:#0c1226; --ink:#eef1ff; --soft:rgba(238,241,255,.68); --card:rgba(255,255,255,.1); --line:rgba(238,241,255,.2); --bar:#eef1ff}
+
+*{box-sizing:border-box;margin:0}
+html,body{min-height:100%}
+body{
+  font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color:var(--ink);
+  background:linear-gradient(165deg,var(--bg1),var(--bg2)) fixed;
+  transition:background .8s,color .5s;
+  padding:clamp(16px,4vw,40px);
+}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+main{max-width:760px;margin:0 auto;position:relative;z-index:1}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.brand{font-weight:800;font-size:1.15rem;letter-spacing:-.02em}
+#nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.hello{color:var(--soft);font-size:.95rem}
+
+.top{display:flex;gap:10px;flex-wrap:wrap}
+.search{flex:1 1 220px;display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;overflow:hidden;backdrop-filter:blur(6px)}
+.search input{flex:1;min-width:0;background:none;border:0;padding:12px 18px}
+.search input::placeholder{color:var(--soft)}
+.btn{display:inline-block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:11px 18px;cursor:pointer;backdrop-filter:blur(6px);transition:transform .15s,border-color .15s}
+.btn:hover{border-color:var(--ink)}
+.btn:active{transform:scale(.96)}
+.search .btn{border:0;border-left:1px solid var(--line);border-radius:0}
+
+.hero{padding:clamp(28px,7vw,64px) 0 28px}
+.city{font-size:1.25rem;font-weight:600}
+.temp{font-size:clamp(6rem,26vw,12rem);font-weight:800;line-height:.9;letter-spacing:-.05em;margin:6px 0 10px}
+.temp sup{font-size:.28em;font-weight:600;letter-spacing:0;vertical-align:top;position:relative;top:.35em;margin-left:.1em}
+.cond{font-size:1.5rem;font-weight:600;display:flex;align-items:center;gap:10px}
+.cond .ico{font-size:2rem;display:inline-block;animation:float 3.2s ease-in-out infinite}
+.meta{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;color:var(--soft)}
+.meta b{color:var(--ink);font-weight:600}
+
+.week{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:6px 18px;backdrop-filter:blur(8px)}
+.week h2{font-size:1rem;font-weight:600;padding:14px 0 6px;color:var(--soft)}
+.day{display:grid;grid-template-columns:minmax(78px,1fr) 2rem 2.6rem minmax(70px,2fr) 5rem;align-items:center;gap:10px;padding:13px 0;border-top:1px solid var(--line)}
+.day:first-of-type{border-top:0}
+.day .name{font-weight:600}
+.day .ico{font-size:1.4rem;text-align:center}
+.day .rain{font-size:.8rem;color:var(--soft)}
+.day .temps{text-align:right}
+.day .lo{color:var(--soft)}
+.day .hi{font-weight:600}
+.track{height:6px;border-radius:6px;background:var(--line);position:relative}
+.fill{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--bar);transform-origin:left}
+.msg{padding:40px 0;font-size:1.1rem}
+.err{font-weight:600}
+footer{margin-top:22px;font-size:.8rem;color:var(--soft)}
+footer a{color:inherit}
+
+/* Animasyonlar */
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.enter .hero-i{animation:rise .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i) * 110ms)}
+.enter .day{animation:rise .55s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(260ms + var(--i) * 80ms)}
+.enter .fill{animation:grow .9s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(450ms + var(--i) * 80ms)}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+@media (max-width:460px){
+  .day{grid-template-columns:1fr 1.8rem 1fr 4.2rem;gap:6px}
+  .day .rain{display:none}
+}
+</style>
+<style>
+body{--bg1:#f2f4eb;--bg2:#e1e8d9;--ink:#203c36;--soft:#65776b;--card:rgba(255,254,249,.78);--line:rgba(32,60,54,.14);--bar:#32674d;padding:clamp(20px,4vw,56px)}main{max-width:980px}.bar{padding-bottom:24px;border-bottom:1px solid var(--line);margin-bottom:30px}.brand{font-size:1.7rem}.brand::before{content:'◒ ';color:#a78138}.top{max-width:740px}.hero{min-height:300px}.week{box-shadow:0 18px 55px #203c3608;padding:12px 26px}.btn{background:var(--card)}footer{padding:16px 0}.welcome{margin-bottom:26px}.welcome h1{font-size:clamp(30px,5vw,46px);letter-spacing:-1.5px;margin-bottom:7px}.welcome p{color:var(--soft)}.msg{line-height:1.6;max-width:600px}body[data-theme=rain],body[data-theme=night],body[data-theme=storm]{--soft:#d0dbd8}@media(max-width:520px){.bar{align-items:flex-start}.hello{max-width:160px}.week{padding:8px 14px}.btn{padding:10px 14px}}
+</style><style>.favorite-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;font-size:12px;color:var(--soft)}#updated{margin-left:auto}.favorite-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.favorite-item{display:inline-flex;border:1px solid var(--line);border-radius:25px;overflow:hidden;background:var(--card)}.favorite-item button{border:0;background:none;color:var(--ink);cursor:pointer;padding:8px 12px}.favorite-item button:hover{background:var(--line)}.favorite-item .remove{border-left:1px solid var(--line);padding:8px 11px}.detail-panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;margin-top:20px}.detail-panel h2{font-size:18px;margin:0 0 6px}.panel-sub{color:var(--soft);font-size:12px;line-height:1.6;margin:8px 0 14px}.hourly-list{display:flex;gap:12px;overflow-x:auto;padding:8px 0}.hour-slot{min-width:88px;flex:1;text-align:center;border:1px solid var(--line);border-radius:15px;padding:14px 10px;font-size:12px}.hour-slot b{display:block;font-size:22px;margin:6px 0}.hour-slot .hour-icon{font-size:23px;display:block;margin-top:8px}.hour-slot small{color:var(--soft);font-size:10px}.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.insight{padding:18px;border:1px solid var(--line);border-radius:14px}.insight h3{font-size:14px;margin:8px 0}.insight p{font-size:12px;line-height:1.7;color:var(--soft)}.detail-panel{animation:rise .6s both}#panel-status{font-size:13px;margin-top:14px;color:var(--soft)}@media(max-width:640px){.insight-grid{grid-template-columns:1fr}.detail-panel{padding:18px}#updated{margin-left:0;width:100%}.hour-slot{min-width:80px}.favorite-bar{gap:10px}}@media(prefers-reduced-motion:reduce){.detail-panel{animation:none}}</style><link rel="stylesheet" href="/extras.css"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>.bar .brand::before{content:none}.cond .ico .hava-icon{width:36px;height:36px}.day .ico .hava-icon{width:24px;height:24px}.hour-icon .hava-icon{width:26px;height:26px}</style></head>
+<body data-theme="clear">
+<canvas id="fx" aria-hidden="true"></canvas>
+<main>
+  <header class="bar">
+    <a class="brand" href="/" style="color:inherit;text-decoration:none"><img src="/logo.svg" class="brand-image" width="150" height="40" alt="Hava"></a>
+    <nav id="nav" aria-label="Hesap"></nav>
+  </header>
+
+  <section class="welcome"><h1>Bugünün havası, senin planın.</h1><p>Şehrini bul, önümüzdeki günlere göz at.</p></section><div class="top">
+    <form class="search" id="form" role="search">
+      <input id="q" type="search" placeholder="Şehir ara (örn. İzmir)" aria-label="Şehir ara" autocomplete="off">
+      <button class="btn" type="submit">Ara</button>
+    </form>
+    <button class="btn" id="loc" type="button">Konumum</button>
+    <button class="btn" id="unit" type="button" aria-label="Birimi değiştir">°C</button>
+  </div>
+
+  <div class="favorite-bar"><button class="btn" id="save-city" type="button" disabled>♡ Şehri kaydet</button><span id="favorite-message" role="status"></span><span id="updated"></span></div><div id="favorites" class="favorite-list" aria-label="Favori şehirler"></div><section class="hero" id="hero" aria-live="polite"><p class="msg">Yükleniyor…</p></section>
+
+  <section class="week" id="week" hidden>
+    <h2 id="weekTitle"></h2>
+    <div id="days"></div>
+  </section>
+
+  <section id="hourly-panel" class="detail-panel" hidden><h2>Önümüzdeki saatler</h2><p class="panel-sub">3 saatlik aralıklarla, bulunduğun şehrin saatine göre.</p><div id="hourly" class="hourly-list"></div></section><section id="insights-panel" class="detail-panel" hidden><h2>Günün için küçük notlar</h2><div id="insights" class="insight-grid"></div><p class="panel-sub">Tahmine dayalı günlük önerilerdir; resmi hava uyarısı değildir.</p></section><section id="extras" hidden><section class="detail-panel"><div class="panel-heading"><div><span class="extra-eyebrow">ŞEHİRLERİN HAVA SKOR TABLOSU</span><h2>Bir yerde yaz, bir yerde kış.</h2></div><div class="chart-tabs" role="group" aria-label="Şehir grubu"><button type="button" data-region="TR" aria-pressed="true">Türkiye</button><button type="button" data-region="world" aria-pressed="false">Dünya seçkisi</button></div></div><p class="panel-sub">Seçili 12 şehir arasında karşılaştırma; tüm dünyanın veya Türkiye’nin mutlak en sıcak / soğuk noktaları değildir.</p><div class="score-controls"><label for="score-order">Sıralama</label><select id="score-order"><option value="hot">En sıcaktan en soğuğa</option><option value="cold">En soğuktan en sıcağa</option></select></div><div id="score-highlights"></div><div id="scoreboard" aria-live="polite">Şehirler yükleniyor…</div><p id="score-time" class="panel-sub"></p></section>
+<section class="detail-panel"><div class="panel-heading"><div><span class="extra-eyebrow">GÜNÜN DETAYLARI</span><h2>Gökyüzüne biraz daha yakından.</h2></div><button class="btn" id="refresh-weather" type="button">↻ Yenile</button></div><div id="weather-metrics" class="metrics-grid"></div><div id="sun-track" class="sun-track"></div></section>
+<section class="detail-panel"><div class="panel-heading"><div><span class="extra-eyebrow">ÖNÜMÜZDEKİ 48 SAAT</span><h2>Bir bakışta değişim.</h2></div><div class="chart-tabs" role="group" aria-label="Grafik verisi"><button type="button" data-chart="temp" aria-pressed="true">Sıcaklık</button><button type="button" data-chart="pop" aria-pressed="false">Yağış</button><button type="button" data-chart="wind" aria-pressed="false">Rüzgâr</button></div></div><div id="forecast-chart"></div><div id="chart-readout" role="status" class="panel-sub"></div></section>
+<div class="extras-columns"><section class="detail-panel"><span class="extra-eyebrow">DIŞARI ÇIKMA PLANI</span><h2>Hangi saat sana uyar?</h2><label class="panel-sub" for="activity">Aktiviteni seç</label><select id="activity"><option value="walk">Yürüyüş</option><option value="bike">Bisiklet</option><option value="picnic">Piknik</option></select><div id="activity-result"></div><button class="btn" id="calendar-export" type="button" disabled>↓ Takvimime ekle (.ics)</button><p class="panel-sub">Önümüzdeki 48 saatteki gündüz tahminleri arasından sıcaklık, rüzgâr ve yağışa göre hesaplanır. Kesinlik veya güvenlik garantisi değildir.</p></section>
+<section class="detail-panel"><span class="extra-eyebrow">BULUNDUĞUN YERİN HAVASI</span><h2>Hava kalitesi</h2><div id="air-quality" aria-live="polite"></div><p class="panel-sub">OpenWeather 1–5 ölçeğidir; ABD AQI ölçeğiyle aynı değildir. Veriler model tahminidir.</p></section></div>
+<section class="detail-panel"><span class="extra-eyebrow">İKİ ŞEHİR, TEK BAKIŞ</span><h2>Orada hava nasıl?</h2><form id="compare-form" class="compare-form"><label for="compare-city" class="panel-sub">Karşılaştırılacak şehir</label><div><input id="compare-city" required maxlength="80" placeholder="Örn. Ankara, TR"><button class="btn" type="submit">Karşılaştır ↗</button></div></form><div id="comparison" aria-live="polite"></div></section></section><p id="panel-status" role="status"></p><footer>Veri: <a href="https://openweathermap.org/" target="_blank" rel="noopener">OpenWeatherMap</a></footer>
+</main>
+
+<script src="config.js"></script>
+<script src="auth.js"></script><script src="/extras.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let fahrenheit = false, state = null, loadVersion=0;try{fahrenheit=localStorage.getItem('hava-unit')==='F'}catch{}$('unit').textContent=fahrenheit?'°F':'°C';
+
+/* ---------- Oturum ---------- */
+Auth.renderNav($("nav")); // önbellekteki bilgiyle hemen çiz
+(async () => {            // sonra sunucuya sor
+  if (APP_CONFIG.REQUIRE_LOGIN) await Auth.requireLogin(); else await Auth.refresh();
+  Auth.renderNav($("nav"));
+})();
+
+/* ---------- OpenWeatherMap ---------- */
+// USE_SERVER açıkken istekler server.js'e gider, anahtarı sunucu ekler
+const OWM = APP_CONFIG.USE_SERVER ? "/api/owm" : "https://api.openweathermap.org";
+const KEY = APP_CONFIG.OWM_KEY;
+const APPID = APP_CONFIG.USE_SERVER ? "" : `&appid=${KEY}`;
+const qs = p => `lat=${p.lat}&lon=${p.lon}&units=metric${APPID}`;
+
+async function getJSON(url){
+  const r = await fetch(url);
+  if (r.status === 401) throw new Error("key");
+  if (!r.ok) { const data=await r.json().catch(()=>({})); throw new Error(data.error || 'Hava durumu alınamadı.'); }
+  return r.json();
+}
+
+async function geocode(name){
+  const j = await getJSON(`${OWM}/geo/1.0/direct?q=${encodeURIComponent(name)}&limit=1${APPID}`);
+  if (!j.length) throw new Error("notfound");
+  const p = j[0];
+  return {name: (p.local_names && p.local_names.tr) || p.name, country: p.country || "", lat: p.lat, lon: p.lon};
+}
+
+// Ücretsiz plan: anlık hava + 3 saatlik tahmini günlere topluyoruz (5 gün)
+async function getFree(p){
+  const [cur, fc] = await Promise.all([
+    getJSON(`${OWM}/data/2.5/weather?${qs(p)}`),
+    getJSON(`${OWM}/data/2.5/forecast?${qs(p)}`)
+  ]);
+  const tz = fc.city.timezone, map = {};
+  fc.list.forEach(it => {
+    const t = new Date((it.dt + tz) * 1000), key = t.toISOString().slice(0, 10);
+    const d = map[key] || (map[key] = {date:key, min:99, max:-99, pop:0, id:800, diff:99});
+    d.min = Math.min(d.min, it.main.temp_min);
+    d.max = Math.max(d.max, it.main.temp_max);
+    d.pop = Math.max(d.pop, it.pop || 0);
+    const diff = Math.abs(t.getUTCHours() - 13);
+    if (diff < d.diff){ d.diff = diff; d.id = it.weather[0].id; }
+  });
+  return {
+    cur: {temp:cur.main.temp, feels:cur.main.feels_like, hum:cur.main.humidity,
+          wind:cur.wind.speed * 3.6, id:cur.weather[0].id, night:cur.weather[0].icon.endsWith("n")},
+    sunrise:cur.sys.sunrise,sunset:cur.sys.sunset,pressure:cur.main.pressure,visibility:cur.visibility,clouds:cur.clouds.all,
+    timeline:fc.list.map(it=>({dt:it.dt,temp:it.main.temp,feels:it.main.feels_like,pop:it.pop||0,wind:it.wind.speed*3.6,rain:it.rain?.['3h']||0,id:it.weather[0].id,night:it.sys.pod==='n'})),
+    timezone:tz,
+    hourly:fc.list.slice(0,8).map(it=>({dt:it.dt,temp:it.main.temp,pop:it.pop||0,id:it.weather[0].id})),
+    days: Object.values(map)
+  };
+}
+
+// One Call 3.0: 8 günlük tahmin (abonelik gerekir)
+async function getOneCall(p){
+  const j = await getJSON(`${OWM}/data/3.0/onecall?${qs(p)}&exclude=minutely,hourly,alerts`);
+  const c = j.current;
+  return {
+    cur: {temp:c.temp, feels:c.feels_like, hum:c.humidity, wind:c.wind_speed * 3.6,
+          id:c.weather[0].id, night:c.weather[0].icon.endsWith("n")},
+    days: j.daily.map(d => ({
+      date: new Date((d.dt + j.timezone_offset) * 1000).toISOString().slice(0, 10),
+      min:d.temp.min, max:d.temp.max, pop:d.pop || 0, id:d.weather[0].id
+    }))
+  };
+}
+
+// OWM hava kodu -> [açıklama, ikon, tema]
+function info(id, night){
+  if (id >= 200 && id < 300) return ["Gök gürültülü fırtına",havaIcon("storm"),"storm"];
+  if (id >= 300 && id < 400) return ["Çise",havaIcon("rain"),"rain"];
+  if (id >= 500 && id < 600) return ["Yağmurlu",havaIcon("rain"),"rain"];
+  if (id >= 600 && id < 700) return ["Karlı",havaIcon("snow"),"snow"];
+  if (id >= 700 && id < 800) return ["Sisli",havaIcon("cloud"),"cloud"];
+  if (id === 800) return night ? ["Açık",havaIcon("moon"),"night"] : ["Açık",havaIcon("sun"),"clear"];
+  if (id <= 802)  return night ? ["Parçalı bulutlu",havaIcon("cloud"),"night"] : ["Parçalı bulutlu",havaIcon("cloud"),"clear"];
+  return ["Kapalı",havaIcon("cloud"),"cloud"];
+}
+const conv = c => Math.round(fahrenheit ? c * 9/5 + 32 : c);
+
+/* ---------- Ekran ---------- */
+function countUp(el, to){
+  if (reduce){ el.textContent = to; return; }
+  const s = performance.now();
+  (function step(n){
+    const k = Math.min((n - s) / 900, 1);
+    el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3)));
+    if (k < 1) requestAnimationFrame(step);
+  })(s);
+}
+
+function render(animate){
+  if (!state) return;
+  const {place, data} = state, c = data.cur, days = data.days;
+  const [label, icon, theme] = info(c.id, c.night);
+  document.body.dataset.theme = theme;
+  setFx(theme);
+
+  const hero = $("hero"), week = $("week");
+  hero.className = "hero" + (animate ? " enter" : "");
+  week.className = "week" + (animate ? " enter" : "");
+
+  const t = conv(c.temp);
+  hero.innerHTML = `
+    <p class="city hero-i" style="--i:0">${esc(place.name)}${place.country ? ", " + esc(place.country) : ""}</p>
+    <p class="temp hero-i" style="--i:1"><span id="tnum">${animate ? 0 : t}</span><sup>°${fahrenheit ? "F" : "C"}</sup></p>
+    <p class="cond hero-i" style="--i:2"><span class="ico">${icon}</span>${label}</p>
+    <p class="meta hero-i" style="--i:3">
+      <span>Hissedilen <b>${conv(c.feels)}°</b></span>
+      <span>Nem <b>%${c.hum}</b></span>
+      <span>Rüzgâr <b>${Math.round(c.wind)} km/sa</b></span>
+    </p>`;
+  if (animate) countUp($("tnum"), t);
+
+  const min = Math.min(...days.map(d => d.min)), max = Math.max(...days.map(d => d.max)), span = (max - min) || 1;
+  $("weekTitle").textContent = `5 günlük tahmin · ${days.length} takvim günü`;
+  $("days").innerHTML = days.map((d, i) => {
+    const name = i === 0 ? "Bugün" : new Date(d.date + "T12:00").toLocaleDateString("tr-TR", {weekday:"long"});
+    const [lbl, ic] = info(d.id, false);
+    const left = (d.min - min) / span * 100, width = Math.max((d.max - d.min) / span * 100, 6);
+    return `<div class="day" style="--i:${i}">
+      <span class="name">${name}</span>
+      <span class="ico" title="${lbl}">${ic}</span>
+      <span class="rain">💧%${Math.round(d.pop * 100)}</span>
+      <span class="track"><span class="fill" style="left:${left}%;width:${width}%"></span></span>
+      <span class="temps"><span class="lo">${conv(d.min)}°</span> <span class="hi">${conv(d.max)}°</span></span>
+    </div>`;
+  }).join("");
+  week.hidden = false;
+  renderDetails();
+  renderExtras();
+}
+
+function showError(e){
+  $("extras").hidden=true;
+  $("week").hidden = true;
+  $("hourly-panel").hidden=true; $("insights-panel").hidden=true; $("save-city").disabled=true;
+  const m = {
+    notfound: "Şehir bulunamadı. Yazımı kontrol edip tekrar dene.",
+    geo: "Konum izni verilmedi. Şehir adını yazarak arayabilirsin.",
+    nokey: "API anahtarı eksik. Sunucu kullanıyorsan .env dosyasındaki OWM_KEY alanına, kullanmıyorsan config.js içindeki OWM_KEY alanına anahtarını yapıştır.",
+    key: "API anahtarı geçersiz ya da henüz aktif değil (yeni anahtarlar 1-2 saat sürebilir). One Call modunda abonelik de gerekir."
+  };
+  $("hero").className = "hero";
+  $("hero").innerHTML = `<p class="msg err">${esc(m[e.message] || e.message || "Veri alınamadı. Daha sonra tekrar dene.")}</p>`;
+}
+
+async function load(place){
+  const version=++loadVersion; $("save-city").disabled=true; $("favorite-message").textContent="";
+  if (!APP_CONFIG.USE_SERVER && (!KEY || KEY.startsWith("BURAYA"))) return showError(new Error("nokey"));
+  $("hero").className = "hero";
+  $("hero").innerHTML = '<p class="msg">Yükleniyor…</p>';
+  try{
+    const data = APP_CONFIG.MODE === "onecall" ? await getOneCall(place) : await getFree(place);
+    if(version!==loadVersion)return;
+    state = {place, data};
+    $("save-city").disabled=false;
+    $("updated").textContent="Son güncelleme: "+new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+    render(true);
+    try{ localStorage.setItem("hava-sehir", JSON.stringify(place)); }catch(_){}
+  }catch(e){ if(version===loadVersion)showError(e); }
+}
+
+$("form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const v = $("q").value.trim();
+  if (!v) return;
+  try{ load(await geocode(v)); }catch(e){ showError(e); }
+});
+$("loc").addEventListener("click", () => {
+  if (!navigator.geolocation) return showError(new Error("geo"));
+  navigator.geolocation.getCurrentPosition(
+    async p => {const place={name:'Konumun',country:'',lat:p.coords.latitude,lon:p.coords.longitude};try{const locations=await getJSON(OWM+'/geo/1.0/reverse?lat='+place.lat+'&lon='+place.lon+'&limit=1');if(locations[0]){place.name=locations[0].local_names?.tr||locations[0].name;place.country=locations[0].country||''}}catch{}load(place);},
+    () => showError(new Error("geo"))
+  );
+});
+$("unit").addEventListener("click", () => {
+  fahrenheit = !fahrenheit;
+  try{localStorage.setItem("hava-unit",fahrenheit?"F":"C")}catch{}
+  $("unit").textContent = fahrenheit ? "°F" : "°C";
+  render(false);
+});
+
+/* ---------- Arka plan animasyonu (yağmur, kar, yıldız, bulut, güneş, şimşek) ---------- */
+const cv = $("fx"), ctx = cv.getContext("2d");
+let W = 0, H = 0, fx = "clear", P = [], clouds = [], flash = 0, nextBolt = 0, raf = 0, last = 0;
+
+function build(){
+  P = []; clouds = [];
+  const n = {rain:160, storm:230, snow:120, night:90}[fx] || 0;
+  for (let i = 0; i < n; i++){
+    P.push({x:Math.random()*W, y:Math.random()*H, p:Math.random()*6.28,
+      l:10 + Math.random()*14, v:12 + Math.random()*8,
+      r:fx === "night" ? Math.random()*1.4 + .3 : 1.5 + Math.random()*2.5,
+      s:.6 + Math.random()});
+    if (fx === "night") P[i].y = Math.random() * H * .8;
+  }
+  const cn = {cloud:5, rain:5, storm:6, clear:2, snow:3, night:2}[fx];
+  for (let i = 0; i < cn; i++)
+    clouds.push({x:Math.random()*W, y:40 + Math.random()*H*.4, s:110 + Math.random()*150, v:.12 + Math.random()*.2});
+}
+function size(){
+  const r = devicePixelRatio || 1;
+  W = innerWidth; H = innerHeight;
+  cv.width = W * r; cv.height = H * r;
+  ctx.setTransform(r, 0, 0, r, 0, 0);
+  build();
+  if (reduce) frame(performance.now());
+}
+function puff(x, y, r, rgb, a){
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+}
+function frame(t){
+  const dt = Math.min((t - last) / 16.7 || 1, 3); last = t;
+  ctx.clearRect(0, 0, W, H);
+  const dark = fx === "rain" || fx === "storm" || fx === "night";
+
+  if (fx === "clear"){            // güneş ışıması + dönen ışınlar
+    const cx = W * .84, cy = H * .13, pulse = 1 + Math.sin(t / 1600) * .06;
+    puff(cx, cy, 330 * pulse, "255,244,200", .6);
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(t / 9000);
+    ctx.strokeStyle = "rgba(255,248,215,.14)"; ctx.lineWidth = 34;
+    for (let i = 0; i < 14; i++){ ctx.rotate(6.283 / 14); ctx.beginPath(); ctx.moveTo(90, 0); ctx.lineTo(900, 0); ctx.stroke(); }
+    ctx.restore();
+  }
+  if (fx === "night"){            // yanıp sönen yıldızlar
+    ctx.fillStyle = "#fff";
+    P.forEach(s => { ctx.globalAlpha = .35 + .65 * Math.abs(Math.sin(t / 900 + s.p)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill(); });
+    ctx.globalAlpha = 1;
+  }
+  clouds.forEach(c => {           // süzülen bulutlar
+    c.x += c.v * dt; if (c.x - c.s * 1.5 > W) c.x = -c.s * 1.5;
+    const rgb = dark ? "150,165,190" : "255,255,255", a = dark ? .2 : .42;
+    puff(c.x, c.y, c.s, rgb, a);
+    puff(c.x + c.s * .6, c.y + c.s * .1, c.s * .8, rgb, a);
+    puff(c.x - c.s * .6, c.y + c.s * .15, c.s * .75, rgb, a);
+    puff(c.x + c.s * .2, c.y - c.s * .25, c.s * .7, rgb, a);
+  });
+  if (fx === "rain" || fx === "storm"){
+    ctx.strokeStyle = "rgba(200,220,255,.45)"; ctx.lineWidth = 1.2; ctx.beginPath();
+    P.forEach(d => {
+      ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - d.l * .18, d.y + d.l);
+      d.y += d.v * dt; d.x -= d.v * dt * .18;
+      if (d.y > H){ d.y = -20; d.x = Math.random() * (W + 100); }
+    });
+    ctx.stroke();
+  }
+  if (fx === "snow"){
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    P.forEach(f => {
+      f.y += f.s * dt; f.x += Math.sin(t / 900 + f.p) * .4 * dt;
+      if (f.y > H){ f.y = -10; f.x = Math.random() * W; }
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
+    });
+  }
+  if (fx === "storm"){            // şimşek çakması
+    if (t > nextBolt){ flash = 1; nextBolt = t + 2500 + Math.random() * 5000; }
+    flash *= .9;
+    if (flash > .02){ ctx.fillStyle = `rgba(220,225,255,${flash * .35})`; ctx.fillRect(0, 0, W, H); }
+  }
+  if (!reduce) raf = requestAnimationFrame(frame);
+}
+function setFx(theme){
+  fx = theme; build();
+  if (reduce) frame(performance.now());
+  else if (!raf) raf = requestAnimationFrame(frame);
+}
+addEventListener("resize", size);
+size();
+
+/* ---------- Açılış ---------- */
+async function loadFavorites(){const r=await Auth.api('/favorites');if(!r.ok){$('panel-status').textContent=r.data.error||'Favoriler yüklenemedi.';return;}const box=$('favorites');box.replaceChildren();for(const city of r.data.favorites){const item=document.createElement('span');item.className='favorite-item';const open=document.createElement('button');open.type='button';open.textContent=city.name;open.addEventListener('click',()=>load(city));const remove=document.createElement('button');remove.type='button';remove.className='remove';remove.textContent='×';remove.setAttribute('aria-label',city.name+' favorisini kaldır');remove.addEventListener('click',async()=>{remove.disabled=true;const result=await Auth.api('/favorites/'+city.id,'DELETE');if(result.ok)await loadFavorites();else{$('panel-status').textContent=result.data.error||'Favori kaldırılamadı.';remove.disabled=false;}});item.append(open,remove);box.append(item);}}
+$('save-city').addEventListener('click',async()=>{if(!state)return;const button=$('save-city');button.disabled=true;const r=await Auth.api('/favorites','POST',state.place);$('favorite-message').textContent=r.ok?'Favorilerine kaydedildi.':r.data.error||'Kaydedilemedi.';if(r.ok)await loadFavorites();button.disabled=false;});
+function renderDetails(){const {data}=state,c=data.cur;const hourly=data.hourly||[];$('hourly-panel').hidden=!hourly.length;$('hourly').innerHTML=hourly.map(h=>{const time=new Date((h.dt+(data.timezone||0))*1000).toISOString().slice(11,16);const description=info(h.id,false);return '<article class="hour-slot"><span>'+time+'</span><span class="hour-icon" title="'+description[0]+'">'+description[1]+'</span><b>'+conv(h.temp)+'°</b><small>Yağış %'+Math.round(h.pop*100)+'</small></article>';}).join('');const probability=hourly.length?Math.max(...hourly.map(h=>h.pop)):0;const rain=c.id>=200&&c.id<600;const tips=[{icon:rain||probability>=.4?'☂':'☀',title:rain||probability>=.4?'Şemsiyeye yer aç.':'Bir açık hava molası?',text:rain||probability>=.4?'Yağış var veya önümüzdeki saatlerde yağış ihtimali yükseliyor. Dışarı çıkmadan tahmine göz at.':'Yakın saatlerde yağış ihtimali düşük görünüyor. Dışarıdaki planını saatlik tahminle eşleştir.'},{icon:'◒',title:c.feels<12?'Bir kat daha iyi gelebilir.':c.feels>28?'Hafif giyin, suyu unutma.':'Günün temposuna göre giyin.',text:'Hissedilen sıcaklık '+conv(c.feels)+'°. '+(c.feels<12?'Serin havaya karşı bir üst katman düşünebilirsin.':c.feels>28?'Sıcak saatlerde gölge ve kısa molalar iyi gelebilir.':'Sabah ve akşam için tahminlere de göz at.')},{icon:'↗',title:c.wind>=30?'Rüzgâra dikkat.':'Rüzgârı da hesaba kat.',text:'Rüzgâr yaklaşık '+Math.round(c.wind)+' km/sa. '+(c.wind>=30?'Açık alan planlarında rüzgârlı koşulları değerlendir.':'Yürüyüş veya bisiklet planında rüzgâr bilgisini değerlendirebilirsin.')}];$('insights').innerHTML=tips.map(t=>'<article class="insight"><span>'+t.icon+'</span><h3>'+t.title+'</h3><p>'+t.text+'</p></article>').join('');$('insights-panel').hidden=false;}
+let start = {name:"İstanbul", country:"TR", lat:41.0082, lon:28.9784};
+try{ const s = JSON.parse(localStorage.getItem("hava-sehir")); if (s && s.lat) start = s; }catch(_){}
+(async()=>{const session=await Auth.api("/me");if(!session.ok){location.replace("/login");return;}await loadFavorites();load(start);})();
+</script>
+</body>
+</html>
