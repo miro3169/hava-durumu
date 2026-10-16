@@ -30,3 +30,15 @@ Hava verisi için ayrıca .env içindeki OWM_KEY doldurulmalıdır.
 Paylaşmadan önce git status --short ve git diff --cached ile dosyaları gözden geçir. Önceden Git'e eklenmiş dosyaları .gitignore geçmişten kaldırmaz. Anahtar bir commit'e girdiyse anahtarı değiştir ve geçmişi temizle.
 
 Klonlayan kişi npm install çalıştırır, .env.example dosyasını .env olarak kopyalar, kendi SMTP/OWM/JWT değerlerini ekler ve npm start çalıştırır. Gmail adresi de yalnızca özel .env dosyasında tutulur. Kullanıcı hesapları veya parolalar kaynak kodla paylaşılmaz.
+
+## Ücretsiz bulut sürümü
+
+GitHub Pages, docs/ dizinindeki statik ön yüzü yayınlar. Bu sürüm Supabase Auth ve Postgres kullanır; yerel Node.js/SQLite sürümü ayrı çalışmaya devam eder. Mevcut SQLite hesapları buluta aktarılmamıştır.
+
+- cloud-config.json yalnızca proje adresi ve tarayıcı için tasarlanmış publishable key içerir.
+- cloud-browser.js Supabase oturumlarını ve kullanıcıya özel favori erişimini sağlar.
+- cloud-schema.sql yeni proje için tek seferlik kurulumdur; mevcut veritabanında tekrar çalıştırmayın.
+- cloud-api.ts Supabase hava-api fonksiyonunun kaynağıdır. Kullanıcı oturumu sunucuda doğrulanır, kullanıcı ve ortak API limitleri uygulanır, sonuçlar 10 dakika saklanır. Legacy JWT kontrolü yerine fonksiyon içinde Auth user doğrulaması kullanılır.
+- OWM_KEY yalnızca Edge Function secret ayarına; SMTP bilgileri yalnızca Authentication SMTP ayarlarına girilir.
+- npm ci ardından npm run build:pages ile docs/ yeniden oluşturulur. GitHub Pages yayın kaynağı main /docs seçilir.
+- Ücretsiz Supabase projesi hareketsizlikte duraklatılabilir; kota sınırlıdır.
