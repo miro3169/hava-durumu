@@ -1,0 +1,9 @@
+
+const form=document.querySelector('form[data-mode]');
+const msg=document.getElementById('message');
+const emailInput=document.getElementById('email');
+if(emailInput)emailInput.value=new URLSearchParams(location.search).get('email')||'';
+async function request(route,body){const r=await fetch('/api/'+route,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});let data;try{data=await r.json()}catch{throw new Error('Sunucudan yanıt alınamadı. Daha sonra tekrar dene.')}return {ok:r.ok,data};}
+if(form)form.addEventListener('submit',async e=>{e.preventDefault();const button=form.querySelector('button');button.disabled=true;msg.textContent='';try{const body={email:emailInput.value.trim()};for(const key of ['name','password','code']){const el=document.getElementById(key);if(el)body[key]=el.value;}const {ok,data}=await request(form.dataset.mode,body);if(data.verificationRequired){location.href='/hava-durumu/verify.html?email='+encodeURIComponent(data.email);return;}if(!ok)throw new Error(data.error||'İşlem tamamlanamadı.');if(data.user)localStorage.setItem('hava-user',JSON.stringify(data.user));location.href='/hava-durumu/dashboard.html';}catch(err){msg.textContent=err.message;}finally{button.disabled=false;}});
+const resend=document.getElementById('resend');
+if(resend)resend.addEventListener('click',async()=>{if(!emailInput.reportValidity())return;resend.disabled=true;try{const {ok,data}=await request('resend-code',{email:emailInput.value.trim()});if(!ok)throw new Error(data.error);msg.textContent=data.message;let seconds=60;resend.textContent=seconds+' saniye bekle';const timer=setInterval(()=>{seconds--;resend.textContent=seconds+' saniye bekle';if(!seconds){clearInterval(timer);resend.disabled=false;resend.textContent='Yeni kod gönder';}},1000);}catch(err){msg.textContent=err.message;resend.disabled=false;}});
